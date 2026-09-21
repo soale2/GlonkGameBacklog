@@ -114,6 +114,44 @@ def get_or_create_cached_game(db: Session, igdb_result: dict) -> Game:
     return game
 
 
+def get_game_by_external_id(db: Session, external_id: int) -> Game:
+    """Fetch one exact game by its IGDB id (not a fuzzy search), for when the caller
+    already knows exactly which game they want, e.g. picked from an autocomplete list."""
+    existing = db.query(Game).filter_by(external_id=external_id).first()
+    if existing:
+        return existing
+
+    settings = get_settings()
+    if not settings.igdb_client_id or not settings.igdb_client_secret:
+        raise IgdbUnavailable("IGDB_CLIENT_ID/IGDB_CLIENT_SECRET is not set")
+
+    token = _get_access_token(settings.igdb_client_id, settings.igdb_client_secret)
+    body = (
+        f"where id = {external_id}; "
+        "fields name,cover.image_id,first_release_date,genres.name,platforms.name; "
+        "limit 1;"
+    )
+    try:
+        response = httpx.post(
+            IGDB_GAMES_URL,
+            headers={
+                "Client-ID": settings.igdb_client_id,
+                "Authorization": f"Bearer {token}",
+            },
+            content=body,
+            timeout=5.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise IgdbUnavailable(str(exc)) from exc
+
+    results = response.json()
+    if not results:
+        raise IgdbUnavailable(f"No IGDB game found for id {external_id}")
+
+    return get_or_create_cached_game(db, results[0])
+
+
 def get_or_create_stub_game(db: Session, title: str) -> Game:
     """Fallback when IGDB is unavailable: a title-only Game row, matched case-insensitively
     on repeat lookups so we don't create duplicates while IGDB stays down."""

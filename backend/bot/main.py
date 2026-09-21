@@ -12,6 +12,7 @@ from discord import app_commands
 
 from app.config import get_settings
 from app.db import SessionLocal
+from app.integrations.igdb import IgdbUnavailable, search_games
 from app.models import Workspace
 from bot.commands.recommend import handle_recommend
 
@@ -55,8 +56,26 @@ async def on_guild_join(guild: discord.Guild) -> None:
     ensure_workspace(guild)
 
 
+async def game_autocomplete(
+    _interaction: discord.Interaction, current: str
+) -> list[app_commands.Choice[str]]:
+    if len(current.strip()) < 2:
+        return []
+    try:
+        # search_games makes a blocking HTTP call, so it runs off the event loop thread
+        # to avoid stalling the bot's gateway connection while IGDB responds.
+        results = await asyncio.to_thread(search_games, current, 8)
+    except IgdbUnavailable:
+        return []
+    return [
+        app_commands.Choice(name=result["name"][:100], value=str(result["id"]))
+        for result in results
+    ]
+
+
 @tree.command(name="recommend", description="Recommend a game to this server")
 @app_commands.describe(game="Game title", note="The reason for your recommendation")
+@app_commands.autocomplete(game=game_autocomplete)
 async def recommend(interaction: discord.Interaction, game: str, note: str | None = None) -> None:
     await handle_recommend(interaction, game, note)
 

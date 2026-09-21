@@ -1,7 +1,7 @@
 import discord
 
 from app.db import SessionLocal
-from app.integrations.igdb import resolve_game_by_title
+from app.integrations.igdb import IgdbUnavailable, get_game_by_external_id, resolve_game_by_title
 from app.models import Recommendation, User, Workspace
 
 
@@ -42,7 +42,17 @@ async def handle_recommend(
 
         recommender = upsert_user(db, interaction.user)
 
-        game_row, enriched = resolve_game_by_title(db, game)
+        # A numeric value means the user picked a suggestion from the autocomplete list,
+        # so we fetch that exact game instead of running a fresh fuzzy search on its title
+        # (which can rank a different, more obscure game above the one they picked).
+        if game.strip().isdigit():
+            try:
+                game_row = get_game_by_external_id(db, int(game.strip()))
+                enriched = True
+            except IgdbUnavailable:
+                game_row, enriched = resolve_game_by_title(db, game)
+        else:
+            game_row, enriched = resolve_game_by_title(db, game)
 
         recommendation = Recommendation(
             workspace_id=workspace.id,
