@@ -3,16 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { listActivity } from '../api/client'
 import type { ActivityEvent } from '../api/types'
 import { STATUS_LABELS } from '../statusStyle'
-
-function timeAgo(iso: string): string {
-  const seconds = Math.max(0, (Date.now() - new Date(`${iso}Z`).getTime()) / 1000)
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
-}
+import { timeAgo } from '../timeAgo'
 
 function describe(event: ActivityEvent): string {
   switch (event.event_type) {

@@ -61,6 +61,13 @@ async def recommend(interaction: discord.Interaction, game: str, note: str | Non
     await handle_recommend(interaction, game, note)
 
 
+@tree.command(name="website", description="Get the link to the web app")
+async def website(interaction: discord.Interaction) -> None:
+    await interaction.response.send_message(
+        f"Open the web app here: {settings.frontend_origin}", ephemeral=True
+    )
+
+
 async def _health(_request: web.Request) -> web.Response:
     return web.Response(text="ok")
 

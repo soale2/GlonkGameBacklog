@@ -1,4 +1,4 @@
-import type { ActivityEvent, BacklogEntry, BacklogStatus, Game, Me } from './types'
+import type { ActivityEvent, BacklogEntry, BacklogStatus, Game, Me, Recommendation } from './types'
 
 const GENERIC_ERROR_MESSAGE = 'Something went wrong. Please try again.'
 
@@ -69,4 +69,27 @@ export function deleteBacklogEntry(workspaceId: number, entryId: number): Promis
 
 export function listActivity(workspaceId: number): Promise<ActivityEvent[]> {
   return request(`/api/workspaces/${workspaceId}/activity`)
+}
+
+export function listRecommendations(workspaceId: number): Promise<Recommendation[]> {
+  return request(`/api/workspaces/${workspaceId}/recommendations`)
+}
+
+export function addRecommendation(
+  workspaceId: number,
+  payload: { game_id?: number; title?: string; note?: string },
+): Promise<Recommendation> {
+  return request(`/api/workspaces/${workspaceId}/recommendations`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function acceptRecommendation(
+  workspaceId: number,
+  recommendationId: number,
+): Promise<{ id: number; status: BacklogStatus }> {
+  return request(`/api/workspaces/${workspaceId}/recommendations/${recommendationId}/accept`, {
+    method: 'POST',
+  })
 }

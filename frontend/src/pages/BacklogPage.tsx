@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { addBacklogEntry, searchGames } from '../api/client'
 import type { Game } from '../api/types'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { KanbanBoard } from '../components/KanbanBoard'
+import { RecommendationsPanel } from '../components/RecommendationsPanel'
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -204,12 +205,56 @@ function GameSearch({ workspaceId }: { workspaceId: number }) {
   )
 }
 
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '0.45rem 1rem',
+        borderRadius: 999,
+        border: 'none',
+        background: active ? 'var(--accent)' : 'var(--bg-elevated)',
+        color: active ? '#fff' : 'var(--text-muted)',
+        fontWeight: 600,
+        fontSize: '0.85rem',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function BacklogPage({ workspaceId }: { workspaceId: number }) {
+  const [tab, setTab] = useState<'board' | 'recommendations'>('board')
+
   return (
     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <GameSearch workspaceId={workspaceId} />
-        <KanbanBoard workspaceId={workspaceId} />
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <TabButton active={tab === 'board'} onClick={() => setTab('board')}>
+            Board
+          </TabButton>
+          <TabButton active={tab === 'recommendations'} onClick={() => setTab('recommendations')}>
+            Recommendations
+          </TabButton>
+        </div>
+
+        {tab === 'board' && (
+          <>
+            <GameSearch workspaceId={workspaceId} />
+            <KanbanBoard workspaceId={workspaceId} />
+          </>
+        )}
+        {tab === 'recommendations' && <RecommendationsPanel workspaceId={workspaceId} />}
       </div>
       <ActivityFeed workspaceId={workspaceId} />
     </div>

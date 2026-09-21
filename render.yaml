@@ -40,3 +40,5 @@ services:
         sync: false
       - key: IGDB_CLIENT_SECRET
         sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false

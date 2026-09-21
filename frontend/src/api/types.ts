@@ -34,6 +34,15 @@ export interface ActivityEvent {
   game: { id: number; title: string; cover_url: string | null }
 }
 
+export interface Recommendation {
+  id: number
+  note: string | null
+  source: 'web' | 'bot'
+  created_at: string
+  recommended_by: EntryUser
+  game: Game
+}
+
 export interface Workspace {
   id: number
   name: string
