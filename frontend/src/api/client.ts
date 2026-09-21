@@ -85,6 +85,12 @@ export function addRecommendation(
   })
 }
 
+export function deleteRecommendation(workspaceId: number, recommendationId: number): Promise<void> {
+  return request(`/api/workspaces/${workspaceId}/recommendations/${recommendationId}`, {
+    method: 'DELETE',
+  })
+}
+
 export function acceptRecommendation(
   workspaceId: number,
   recommendationId: number,

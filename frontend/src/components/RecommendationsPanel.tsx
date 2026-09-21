@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   acceptRecommendation,
   addRecommendation,
+  deleteRecommendation,
   fetchMe,
   listBacklog,
   listRecommendations,
@@ -93,13 +94,49 @@ function RecommendForm({ workspaceId }: { workspaceId: number }) {
   )
 }
 
+function RemoveButton({ onRemove }: { onRemove: () => void }) {
+  return (
+    <motion.button
+      type="button"
+      aria-label="Remove this recommendation"
+      onClick={onRemove}
+      whileHover={{ background: 'var(--danger-bg)', color: 'var(--danger)' }}
+      whileTap={{ scale: 0.9 }}
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--text-muted)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        padding: 0,
+      }}
+    >
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+        <path
+          d="M1 1L11 11M11 1L1 11"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      </svg>
+    </motion.button>
+  )
+}
+
 function RecommendationCard({
   rec,
   workspaceId,
+  currentUserId,
   alreadyInBacklog,
 }: {
   rec: Recommendation
   workspaceId: number
+  currentUserId: number | undefined
   alreadyInBacklog: boolean
 }) {
   const queryClient = useQueryClient()
@@ -110,6 +147,11 @@ function RecommendationCard({
       queryClient.invalidateQueries({ queryKey: ['backlog', workspaceId] })
       queryClient.invalidateQueries({ queryKey: ['activity', workspaceId] })
     },
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: () => deleteRecommendation(workspaceId, rec.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recommendations', workspaceId] }),
   })
 
   return (
@@ -175,24 +217,27 @@ function RecommendationCard({
           </span>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={() => acceptMutation.mutate()}
-        disabled={alreadyInBacklog || acceptMutation.isPending || acceptMutation.isSuccess}
-        style={{
-          alignSelf: 'center',
-          padding: '0.4rem 0.8rem',
-          borderRadius: 999,
-          border: 'none',
-          background: alreadyInBacklog || acceptMutation.isSuccess ? 'var(--bg)' : 'var(--accent)',
-          color: alreadyInBacklog || acceptMutation.isSuccess ? 'var(--text-muted)' : '#fff',
-          fontWeight: 600,
-          fontSize: '0.78rem',
-          flexShrink: 0,
-        }}
-      >
-        {alreadyInBacklog || acceptMutation.isSuccess ? 'In your backlog' : 'Add to my backlog'}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => acceptMutation.mutate()}
+          disabled={alreadyInBacklog || acceptMutation.isPending || acceptMutation.isSuccess}
+          style={{
+            padding: '0.4rem 0.8rem',
+            borderRadius: 999,
+            border: 'none',
+            background: alreadyInBacklog || acceptMutation.isSuccess ? 'var(--bg)' : 'var(--accent)',
+            color: alreadyInBacklog || acceptMutation.isSuccess ? 'var(--text-muted)' : '#fff',
+            fontWeight: 600,
+            fontSize: '0.78rem',
+          }}
+        >
+          {alreadyInBacklog || acceptMutation.isSuccess ? 'In your backlog' : 'Add to my backlog'}
+        </button>
+        {rec.recommended_by.id === currentUserId && (
+          <RemoveButton onRemove={() => removeMutation.mutate()} />
+        )}
+      </div>
     </motion.div>
   )
 }
@@ -229,6 +274,7 @@ export function RecommendationsPanel({ workspaceId }: { workspaceId: number }) {
             key={rec.id}
             rec={rec}
             workspaceId={workspaceId}
+            currentUserId={me?.id}
             alreadyInBacklog={myGameIds.has(rec.game.id)}
           />
         ))}

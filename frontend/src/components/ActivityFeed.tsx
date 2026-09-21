@@ -1,9 +1,49 @@
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useState } from 'react'
 import { listActivity } from '../api/client'
 import type { ActivityEvent } from '../api/types'
 import { STATUS_LABELS } from '../statusStyle'
 import { timeAgo } from '../timeAgo'
+
+const COLLAPSED_STORAGE_KEY = 'glonk:activity-collapsed'
+
+function readStoredCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function writeStoredCollapsed(value: boolean): void {
+  try {
+    localStorage.setItem(COLLAPSED_STORAGE_KEY, String(value))
+  } catch {
+    // Private browsing or blocked storage. Collapsed state just won't persist.
+  }
+}
+
+function ChevronIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <motion.svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      animate={{ rotate: collapsed ? -90 : 0 }}
+      transition={{ duration: 0.15 }}
+    >
+      <path
+        d="M4 6l4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </motion.svg>
+  )
+}
 
 function describe(event: ActivityEvent): string {
   switch (event.event_type) {
@@ -68,16 +108,25 @@ function EventRow({ event }: { event: ActivityEvent }) {
 }
 
 export function ActivityFeed({ workspaceId }: { workspaceId: number }) {
+  const [collapsed, setCollapsed] = useState(readStoredCollapsed)
   const { data: events, isPending } = useQuery({
     queryKey: ['activity', workspaceId],
     queryFn: () => listActivity(workspaceId),
     refetchInterval: 15000,
   })
 
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev
+      writeStoredCollapsed(next)
+      return next
+    })
+  }
+
   return (
     <aside
       style={{
-        width: 260,
+        width: collapsed ? 'auto' : 260,
         flexShrink: 0,
         borderRadius: 'var(--radius-lg)',
         background: 'var(--bg-elevated)',
@@ -85,36 +134,71 @@ export function ActivityFeed({ workspaceId }: { workspaceId: number }) {
         padding: '1rem 1.1rem',
         height: 'fit-content',
         maxHeight: 'calc(100vh - 8rem)',
-        overflowY: 'auto',
+        overflowY: collapsed ? 'visible' : 'auto',
       }}
     >
-      <h2
+      <button
+        type="button"
+        onClick={toggleCollapsed}
         style={{
-          fontSize: '0.8rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.03em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          width: '100%',
+          border: 'none',
+          background: 'transparent',
           color: 'var(--text-muted)',
-          marginBottom: '0.25rem',
+          padding: 0,
+          marginBottom: collapsed ? 0 : '0.25rem',
         }}
       >
-        Activity
-      </h2>
+        <h2
+          style={{
+            flex: 1,
+            textAlign: 'left',
+            fontSize: '0.8rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.03em',
+            margin: 0,
+          }}
+        >
+          Activity
+        </h2>
+        {events && events.length > 0 && (
+          <span
+            style={{
+              background: 'var(--bg)',
+              borderRadius: 999,
+              padding: '0.1rem 0.5rem',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+            }}
+          >
+            {events.length}
+          </span>
+        )}
+        <ChevronIcon collapsed={collapsed} />
+      </button>
 
-      {isPending && <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading</p>}
-      {!isPending && (!events || events.length === 0) && (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No activity yet.</p>
+      {!collapsed && (
+        <>
+          {isPending && <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading</p>}
+          {!isPending && (!events || events.length === 0) && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No activity yet.</p>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <AnimatePresence initial={false}>
+              {events?.map((event, i) => (
+                <div key={event.id}>
+                  {i > 0 && <div style={{ borderTop: '1px solid var(--border)' }} />}
+                  <EventRow event={event} />
+                </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </>
       )}
-
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <AnimatePresence initial={false}>
-          {events?.map((event, i) => (
-            <div key={event.id}>
-              {i > 0 && <div style={{ borderTop: '1px solid var(--border)' }} />}
-              <EventRow event={event} />
-            </div>
-          ))}
-        </AnimatePresence>
-      </div>
     </aside>
   )
 }

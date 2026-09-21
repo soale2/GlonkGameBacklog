@@ -155,37 +155,24 @@ function GameSearch({ workspaceId }: { workspaceId: number }) {
             )}
 
             {data && !data.enriched && (
-              <div style={{ padding: '0.75rem 0' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  Game details are not available right now.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => addMutation.mutate({ title: query })}
-                  disabled={addMutation.isPending}
-                  style={{
-                    marginTop: '0.4rem',
-                    padding: '0.45rem 0.9rem',
-                    borderRadius: 999,
-                    border: 'none',
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  Add "{query}" without details
-                </button>
-              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.75rem 0 0' }}>
+                Game details are not available right now.
+              </p>
             )}
 
-            {data && data.enriched && (
+            {data && data.enriched && data.results.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.75rem 0 0' }}>
+                No matches found.
+              </p>
+            )}
+
+            {data && data.enriched && data.results.length > 0 && (
               <div
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
                   gap: '0.75rem',
-                  padding: '0.85rem 0',
+                  padding: '0.85rem 0 0',
                 }}
               >
                 {data.results.map((game: Game) => (
@@ -196,6 +183,26 @@ function GameSearch({ workspaceId }: { workspaceId: number }) {
                     onAdd={() => addMutation.mutate({ game_id: game.id })}
                   />
                 ))}
+              </div>
+            )}
+
+            {data && (
+              <div style={{ padding: '0.5rem 0 0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => addMutation.mutate({ title: query })}
+                  disabled={addMutation.isPending}
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: 999,
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  Not the right game? Add "{query}" without details
+                </button>
               </div>
             )}
           </motion.div>

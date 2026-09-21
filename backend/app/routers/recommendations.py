@@ -85,6 +85,26 @@ def create_recommendation(
     return _serialize(rec)
 
 
+@router.delete("/{recommendation_id}", status_code=204)
+def delete_recommendation(
+    workspace_id: int,
+    recommendation_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """Only the person who made a recommendation can remove it."""
+    _require_membership(db, user, workspace_id)
+    rec = (
+        db.query(Recommendation)
+        .filter_by(id=recommendation_id, workspace_id=workspace_id, recommended_by_user_id=user.id)
+        .first()
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="This recommendation could not be found.")
+    db.delete(rec)
+    db.commit()
+
+
 @router.post("/{recommendation_id}/accept")
 def accept_recommendation(
     workspace_id: int,

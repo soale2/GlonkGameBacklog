@@ -7,6 +7,7 @@ unreachable (bad credentials, outage, rate limit). Callers should treat IgdbUnav
 as expected and fall back to get_or_create_stub_game, not as a hard failure.
 """
 
+import difflib
 import time
 
 import httpx
@@ -165,15 +166,28 @@ def get_or_create_stub_game(db: Session, title: str) -> Game:
     return game
 
 
+def _is_close_match(query: str, candidate: str) -> bool:
+    """IGDB's search is fuzzy and always returns its best guess, even when nothing in
+    its database is actually a good match (a title it simply doesn't have yet). Without
+    this check, a search for a game IGDB has never heard of silently returns some
+    unrelated game instead, with no way to tell the two cases apart."""
+    query = query.strip().lower()
+    candidate = candidate.strip().lower()
+    if query in candidate or candidate in query:
+        return True
+    return difflib.SequenceMatcher(None, query, candidate).ratio() >= 0.6
+
+
 def resolve_game_by_title(db: Session, title: str) -> tuple[Game, bool]:
     """Best-effort lookup used by both the bot and the web API: try IGDB's top match,
-    fall back to a stub game if IGDB is unavailable. Returns (game, enriched)."""
+    fall back to a stub game if IGDB is unavailable or has nothing close enough to this
+    title. Returns (game, enriched)."""
     try:
         results = search_games(title, limit=1)
     except IgdbUnavailable:
         return get_or_create_stub_game(db, title), False
 
-    if not results:
+    if not results or not _is_close_match(title, results[0]["name"]):
         return get_or_create_stub_game(db, title), False
 
     return get_or_create_cached_game(db, results[0]), True
