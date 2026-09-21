@@ -18,6 +18,8 @@ from app.models import Game
 
 TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 IGDB_GAMES_URL = "https://api.igdb.com/v4/games"
+IGDB_EXTERNAL_GAMES_URL = "https://api.igdb.com/v4/external_games"
+STEAM_EXTERNAL_GAME_SOURCE = 1
 
 _token_cache: dict[str, float | str] = {}
 
@@ -176,6 +178,113 @@ def _is_close_match(query: str, candidate: str) -> bool:
     if query in candidate or candidate in query:
         return True
     return difflib.SequenceMatcher(None, query, candidate).ratio() >= 0.6
+
+
+def _chunks(items: list, size: int) -> list[list]:
+    return [items[i : i + size] for i in range(0, len(items), size)]
+
+
+def match_steam_appids(appids: list[int]) -> dict[int, int]:
+    """Batch-resolve Steam App IDs to IGDB game IDs via IGDB's external_games table,
+    an exact mapping IGDB itself maintains, rather than a fuzzy title search. Appids
+    with no known IGDB mapping are simply absent from the returned dict."""
+    if not appids:
+        return {}
+
+    settings = get_settings()
+    if not settings.igdb_client_id or not settings.igdb_client_secret:
+        raise IgdbUnavailable("IGDB_CLIENT_ID/IGDB_CLIENT_SECRET is not set")
+
+    token = _get_access_token(settings.igdb_client_id, settings.igdb_client_secret)
+    mapping: dict[int, int] = {}
+
+    for chunk in _chunks(appids, 200):
+        uid_list = ",".join(f'"{appid}"' for appid in chunk)
+        body = (
+            f"fields uid,game; "
+            f"where uid = ({uid_list}) & external_game_source = {STEAM_EXTERNAL_GAME_SOURCE}; "
+            "limit 500;"
+        )
+        try:
+            response = httpx.post(
+                IGDB_EXTERNAL_GAMES_URL,
+                headers={
+                    "Client-ID": settings.igdb_client_id,
+                    "Authorization": f"Bearer {token}",
+                },
+                content=body,
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise IgdbUnavailable(str(exc)) from exc
+
+        for row in response.json():
+            mapping[int(row["uid"])] = row["game"]
+
+    return mapping
+
+
+def get_or_create_cached_games_by_ids(db: Session, igdb_ids: list[int]) -> dict[int, Game]:
+    """Batch version of get_game_by_external_id: reuses cached rows, fetches the rest
+    from IGDB in chunks instead of one request per game."""
+    unique_ids = list(dict.fromkeys(igdb_ids))
+    result: dict[int, Game] = {}
+    missing: list[int] = []
+
+    for igdb_id in unique_ids:
+        existing = db.query(Game).filter_by(external_id=igdb_id).first()
+        if existing:
+            result[igdb_id] = existing
+        else:
+            missing.append(igdb_id)
+
+    if not missing:
+        return result
+
+    settings = get_settings()
+    if not settings.igdb_client_id or not settings.igdb_client_secret:
+        raise IgdbUnavailable("IGDB_CLIENT_ID/IGDB_CLIENT_SECRET is not set")
+    token = _get_access_token(settings.igdb_client_id, settings.igdb_client_secret)
+
+    for chunk in _chunks(missing, 200):
+        id_list = ",".join(str(i) for i in chunk)
+        body = (
+            "fields name,cover.image_id,first_release_date,genres.name,platforms.name; "
+            f"where id = ({id_list}); limit 500;"
+        )
+        try:
+            response = httpx.post(
+                IGDB_GAMES_URL,
+                headers={
+                    "Client-ID": settings.igdb_client_id,
+                    "Authorization": f"Bearer {token}",
+                },
+                content=body,
+                timeout=10.0,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise IgdbUnavailable(str(exc)) from exc
+
+        for igdb_result in response.json():
+            result[igdb_result["id"]] = get_or_create_cached_game(db, igdb_result)
+
+    return result
+
+
+def match_steam_library(db: Session, steam_games: list[dict]) -> list[dict]:
+    """Pairs each Steam-owned game with its matched Game row, or None if IGDB has no
+    Steam mapping for it. Two batched IGDB calls total (or fewer), not one per game."""
+    appid_to_igdb = match_steam_appids([g["appid"] for g in steam_games])
+    igdb_id_to_game = get_or_create_cached_games_by_ids(db, list(appid_to_igdb.values()))
+
+    matched = []
+    for steam_game in steam_games:
+        igdb_id = appid_to_igdb.get(steam_game["appid"])
+        game = igdb_id_to_game.get(igdb_id) if igdb_id is not None else None
+        matched.append({"steam_game": steam_game, "matched": game})
+    return matched
 
 
 def resolve_game_by_title(db: Session, title: str) -> tuple[Game, bool]:

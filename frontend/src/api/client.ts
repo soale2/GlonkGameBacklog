@@ -1,4 +1,12 @@
-import type { ActivityEvent, BacklogEntry, BacklogStatus, Game, Me, Recommendation } from './types'
+import type {
+  ActivityEvent,
+  BacklogEntry,
+  BacklogStatus,
+  Game,
+  Me,
+  Recommendation,
+  SteamPreview,
+} from './types'
 
 const GENERIC_ERROR_MESSAGE = 'Something went wrong. Please try again.'
 
@@ -97,5 +105,22 @@ export function acceptRecommendation(
 ): Promise<{ id: number; status: BacklogStatus }> {
   return request(`/api/workspaces/${workspaceId}/recommendations/${recommendationId}/accept`, {
     method: 'POST',
+  })
+}
+
+export function previewSteamImport(workspaceId: number, profile: string): Promise<SteamPreview> {
+  return request(`/api/workspaces/${workspaceId}/steam-import/preview`, {
+    method: 'POST',
+    body: JSON.stringify({ profile }),
+  })
+}
+
+export function commitSteamImport(
+  workspaceId: number,
+  entries: { game_id?: number; title?: string; hours_played?: number }[],
+): Promise<{ imported: number; skipped: number }> {
+  return request(`/api/workspaces/${workspaceId}/steam-import/commit`, {
+    method: 'POST',
+    body: JSON.stringify({ entries }),
   })
 }

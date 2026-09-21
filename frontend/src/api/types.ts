@@ -43,6 +43,19 @@ export interface Recommendation {
   game: Game
 }
 
+export interface SteamPreviewGame {
+  steam_appid: number
+  steam_name: string
+  hours_played: number
+  game: { id: number; title: string; cover_url: string | null } | null
+  already_in_backlog: boolean
+}
+
+export interface SteamPreview {
+  steam_display_name: string | null
+  games: SteamPreviewGame[]
+}
+
 export interface Workspace {
   id: number
   name: string

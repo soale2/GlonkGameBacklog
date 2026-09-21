@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
-from app.routers import activity, auth, backlog, games, me, recommendations
+from app.routers import activity, auth, backlog, games, me, recommendations, steam_import
 
 settings = get_settings()
 
@@ -37,6 +37,7 @@ app.include_router(games.router)
 app.include_router(backlog.router)
 app.include_router(activity.router)
 app.include_router(recommendations.router)
+app.include_router(steam_import.router)
 
 
 # In production the frontend is built to frontend/dist and served from here,

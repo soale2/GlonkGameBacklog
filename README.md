@@ -47,6 +47,8 @@ Open `.env` and set these values:
   https://discord.com/developers/applications, on the OAuth2 page.
 - `DISCORD_BOT_TOKEN`: get this from the same Discord application, on the Bot page. Click
   Reset Token to reveal it.
+- `STEAM_API_KEY` (optional, only needed for the Steam library import feature): get a free
+  key at https://steamcommunity.com/dev/apikey. Any value works for its "Domain Name" field.
 - Leave `DATABASE_URL` at its default value. This uses a local SQLite file.
 
 Start the backend:
@@ -144,6 +146,7 @@ git push -u origin main
    - `DISCORD_REDIRECT_URI`: the URL from step 2.
    - `FRONTEND_ORIGIN`: the `glonk-web` URL itself. The frontend and backend share one origin
      in production.
+   - `STEAM_API_KEY` (optional): the same value as your local `.env`, if you set one up.
 
    **glonk-bot:**
    - `DATABASE_URL`: the same Neon string.

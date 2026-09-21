@@ -6,6 +6,7 @@ import type { Game } from '../api/types'
 import { ActivityFeed } from '../components/ActivityFeed'
 import { KanbanBoard } from '../components/KanbanBoard'
 import { RecommendationsPanel } from '../components/RecommendationsPanel'
+import { SteamImportPanel } from '../components/SteamImportPanel'
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -241,7 +242,7 @@ function TabButton({
 }
 
 export function BacklogPage({ workspaceId }: { workspaceId: number }) {
-  const [tab, setTab] = useState<'board' | 'recommendations'>('board')
+  const [tab, setTab] = useState<'board' | 'recommendations' | 'steam'>('board')
 
   return (
     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
@@ -253,6 +254,9 @@ export function BacklogPage({ workspaceId }: { workspaceId: number }) {
           <TabButton active={tab === 'recommendations'} onClick={() => setTab('recommendations')}>
             Recommendations
           </TabButton>
+          <TabButton active={tab === 'steam'} onClick={() => setTab('steam')}>
+            Import from Steam
+          </TabButton>
         </div>
 
         {tab === 'board' && (
@@ -262,6 +266,7 @@ export function BacklogPage({ workspaceId }: { workspaceId: number }) {
           </>
         )}
         {tab === 'recommendations' && <RecommendationsPanel workspaceId={workspaceId} />}
+        {tab === 'steam' && <SteamImportPanel workspaceId={workspaceId} />}
       </div>
       <ActivityFeed workspaceId={workspaceId} />
     </div>

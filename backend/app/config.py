@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     igdb_client_id: str = ""
     igdb_client_secret: str = ""
 
+    steam_api_key: str = ""
+
     discord_client_id: str = ""
     discord_client_secret: str = ""
     discord_redirect_uri: str = "http://localhost:8000/api/auth/callback"
