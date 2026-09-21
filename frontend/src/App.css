@@ -124,3 +124,35 @@
 .game-card:hover .remove-btn {
   opacity: 1;
 }
+
+.icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.icon-button:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.sync-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+}

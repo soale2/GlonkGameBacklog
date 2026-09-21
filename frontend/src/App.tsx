@@ -6,6 +6,20 @@ import { fetchMe } from './api/client'
 import type { Workspace } from './api/types'
 import { BacklogPage } from './pages/BacklogPage'
 
+function SyncIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M13.5 8a5.5 5.5 0 0 1-9.83 3.4M2.5 8a5.5 5.5 0 0 1 9.83-3.4M2.5 11.5v-3h3M13.5 4.5v3h-3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -104,16 +118,29 @@ function App() {
         <div className="top-bar">
           <h1>{activeWorkspace ? activeWorkspace.name : 'Glonk Backlog Manager'}</h1>
           <div className="user-chip">
+            <a href="/api/auth/login" title="Sync your Discord servers">
+              <button type="button" className="icon-button">
+                <SyncIcon />
+              </button>
+            </a>
             {me.avatar_url && <img src={me.avatar_url} alt={me.username} />}
             <span>{me.username}</span>
           </div>
         </div>
 
         {me.workspaces.length === 0 && (
-          <p style={{ color: 'var(--text-muted)' }}>
-            You are not in a shared server yet. Ask a friend to add the bot to your Discord
-            server. Then log in again.
-          </p>
+          <div style={{ color: 'var(--text-muted)' }}>
+            <p>
+              You are not in a shared server yet. Ask a friend to add the bot to your Discord
+              server. Then sync your account.
+            </p>
+            <a href="/api/auth/login">
+              <button type="button" className="sync-button">
+                <SyncIcon />
+                Sync with Discord
+              </button>
+            </a>
+          </div>
         )}
 
         {activeWorkspaceId && <BacklogPage workspaceId={activeWorkspaceId} />}
