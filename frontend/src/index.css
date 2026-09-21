@@ -1,0 +1,83 @@
+:root {
+  --bg: #eef0f4;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #1a1c23;
+  --text: #14161a;
+  --text-muted: #6b7280;
+  --border: #e2e4ea;
+  --accent: #6d5ef4;
+  --accent-hover: #5b4bee;
+  --accent-bg: rgba(109, 94, 244, 0.1);
+  --card-bg: #ffffff;
+  --danger: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
+
+  --status-wishlist: #94a3b8;
+  --status-backlog: #6d5ef4;
+  --status-playing: #f5a524;
+  --status-completed: #22c55e;
+  --status-dropped: #ef4444;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(16, 17, 22, 0.06);
+  --shadow-md: 0 8px 24px rgba(16, 17, 22, 0.1);
+
+  color-scheme: light dark;
+  font: 15px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14151a;
+    --bg-elevated: #1c1e26;
+    --bg-sidebar: #101116;
+    --text: #eceef1;
+    --text-muted: #9297a3;
+    --border: #2c2e38;
+    --accent: #9482ff;
+    --accent-hover: #a996ff;
+    --accent-bg: rgba(148, 130, 255, 0.16);
+    --card-bg: #1c1e26;
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.14);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
