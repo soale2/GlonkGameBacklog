@@ -30,7 +30,14 @@ def ensure_workspace(guild: discord.Guild) -> None:
             return
         db.add(Workspace(discord_guild_id=str(guild.id), name=guild.name))
         db.commit()
-        print(f"Provisioned workspace for guild: {guild.name} ({guild.id})")
+        print(f"Provisioned workspace for guild: {guild.name} ({guild.id})", flush=True)
+    except Exception as exc:
+        # Printed directly (not just logged) so this is never silently lost: discord.py's
+        # default on_error handler only logs through the 'discord' logger, which has no
+        # handler unless discord.utils.setup_logging() ran, so an unhandled exception here
+        # would otherwise vanish with no trace in the process output.
+        print(f"Failed to provision workspace for guild {guild.name} ({guild.id}): {exc!r}", flush=True)
+        raise
     finally:
         db.close()
 
@@ -75,6 +82,12 @@ async def _run_health_server() -> None:
 async def _run() -> None:
     if not settings.discord_bot_token:
         raise SystemExit("DISCORD_BOT_TOKEN is not set in .env")
+    # client.run() would set this up automatically, but it also blocks and can't run our
+    # health server alongside it, so we call client.start() directly here instead and have
+    # to set this up ourselves. Without it, discord.py's own connection logs and any
+    # exception it catches from our event handlers go to a logger with no handler attached,
+    # and are silently discarded instead of appearing in the process output.
+    discord.utils.setup_logging()
     async with client:
         await asyncio.gather(_run_health_server(), client.start(settings.discord_bot_token))
 
